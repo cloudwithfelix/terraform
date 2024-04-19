@@ -115,7 +115,6 @@ func buildTestModules(ctx context.Context, root *Config, walker ModuleWalker) hc
 				CallRange:         run.Module.DeclRange,
 			}
 
-			// mdTODO: don't think mod deprecations are relevant here, check!
 			cfg, modDiags, _ := loadModule(ctx, root, &req, walker)
 			diags = append(diags, modDiags...)
 

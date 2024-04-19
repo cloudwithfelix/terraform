@@ -159,15 +159,19 @@ func (i *ModuleInstaller) InstallModules(ctx context.Context, rootDir, testsDir 
 
 	cfg, instDiags, moduleDeprecations := i.installDescendentModules(ctx, rootMod, manifest, walker, installErrsOnly)
 	diags = append(diags, instDiags...)
-	workspaceDeprecations := &configs.WorkspaceDeprecations{
-		ModuleDeprecationInfos: moduleDeprecations,
+	if moduleDeprecations != nil {
+		workspaceDeprecations := &configs.WorkspaceDeprecationInfo{
+			ModuleDeprecationInfos: moduleDeprecations,
+		}
+		if workspaceDeprecations.HasDeprecations() {
+			deprecationString := workspaceDeprecations.BuildDeprecationWarningString()
+			diags = diags.Append(tfdiags.Sourceless(
+				tfdiags.Warning,
+				"Deprecated module versions found, consider installing updated versions",
+				deprecationString,
+			))
+		}
 	}
-	deprecationString := workspaceDeprecations.BuildDeprecationWarningString()
-	diags = diags.Append(tfdiags.Sourceless(
-		tfdiags.Warning,
-		"Deprecated module versions found, consider installing updated versions",
-		deprecationString,
-	))
 
 	return cfg, diags
 }
@@ -321,7 +325,6 @@ func (i *ModuleInstaller) moduleInstallWalker(manifest modsdir.Manifest, upgrade
 						}
 					}
 					span.End()
-					// mdTODO: think more about robustness here
 
 					modDeprecation = collectModuleDeprecationWarnings(moduleVersion, req.Name, record.Version)
 					return mod, record.Version, diags, modDeprecation
@@ -1015,7 +1018,7 @@ func collectModuleDeprecationWarnings(moduleVersion *response.ModuleVersion, sou
 	// mdTODO: don't like this nil check, maybe handle a nil moduleVersion before this function call instead?
 	if moduleVersion != nil && moduleVersion.Deprecation != nil {
 		registryModDeprecation = &configs.RegistryModuleDeprecation{
-			Link:    moduleVersion.Deprecation.Link, // mdTODO: link may be an empty string, account for when building the final error
+			Link:    moduleVersion.Deprecation.Link,
 			Version: version.Original(),
 		}
 	}
