@@ -222,6 +222,7 @@ func loadModule(ctx context.Context, root *Config, req *ModuleRequest, walker Mo
 	cfg.Children, modDiags, childModDeprecations = buildChildModules(ctx, cfg, walker)
 	diags = append(diags, modDiags...)
 	// mdTODO: better error handling here, think of some more ways this can break
+	// Child deprecations can surely be nil, but theorectically modDeprecation can never be.
 	if modDeprecation != nil && childModDeprecations != nil {
 		modDeprecation.ExternalDependencies = childModDeprecations
 	}
@@ -267,6 +268,11 @@ func rebaseChildModule(cfg *Config, root *Config) {
 	cfg.Root = root
 }
 
+// refactor this into it's own file, doesn't make sense to place this here
+type WorkspaceDeprecations struct {
+	ModuleDeprecationInfos []*ModuleDeprecationInfo
+}
+
 type ModuleDeprecationInfo struct {
 	SourceName           string
 	RegistryDeprecation  *RegistryModuleDeprecation
@@ -274,9 +280,45 @@ type ModuleDeprecationInfo struct {
 }
 
 type RegistryModuleDeprecation struct {
-	Subject      *hcl.Range
-	Message      string
+	Version      string
 	ExternalLink string
+}
+
+func (i *WorkspaceDeprecations) BuildDeprecationWarningString() string {
+	modDeprecationStrings := []string{}
+	for _, modDeprecationInfo := range i.ModuleDeprecationInfos {
+		if modDeprecationInfo.RegistryDeprecation != nil {
+			modDeprecationStrings = append(modDeprecationStrings, fmt.Sprintf("Version %s of \"%s\" \nTo learn more visit: %s\n", modDeprecationInfo.RegistryDeprecation.Version, modDeprecationInfo.SourceName, modDeprecationInfo.RegistryDeprecation.ExternalLink))
+		}
+		modDeprecationStrings = append(modDeprecationStrings, buildChildDeprecationWarnings(modDeprecationInfo.ExternalDependencies, []string{modDeprecationInfo.SourceName})...)
+	}
+	deprecationsMessage := ""
+	for _, deprecationString := range modDeprecationStrings {
+		deprecationsMessage += deprecationString + "\n"
+	}
+
+	return deprecationsMessage
+}
+
+func buildChildDeprecationWarnings(modDeprecations []*ModuleDeprecationInfo, parentMods []string) []string {
+	modDeprecationStrings := []string{}
+	for _, deprecation := range modDeprecations {
+		if deprecation.RegistryDeprecation != nil {
+			modDeprecationStrings = append(modDeprecationStrings, fmt.Sprintf("Version %s of \"%s\" %s \nTo learn more visit: %s\n", deprecation.RegistryDeprecation.Version, deprecation.SourceName, buildModHierarchy(parentMods, deprecation.SourceName), deprecation.RegistryDeprecation.ExternalLink))
+		}
+		newParentMods := append(parentMods, deprecation.SourceName)
+		modDeprecationStrings = append(modDeprecationStrings, buildChildDeprecationWarnings(deprecation.ExternalDependencies, newParentMods)...)
+	}
+	return modDeprecationStrings
+}
+
+func buildModHierarchy(parentMods []string, modName string) string {
+	heirarchy := ""
+	for _, parent := range parentMods {
+		heirarchy += fmt.Sprintf("%s -> ", parent)
+	}
+	heirarchy += modName
+	return fmt.Sprintf("(Root: %s)", heirarchy)
 }
 
 // A ModuleWalker knows how to find and load a child module given details about

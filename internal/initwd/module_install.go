@@ -313,7 +313,9 @@ func (i *ModuleInstaller) moduleInstallWalker(manifest modsdir.Manifest, upgrade
 						}
 					}
 					span.End()
-					modDeprecation = collectModuleDeprecationWarnings(moduleVersion, req.CallRange.Ptr(), req.Name)
+					// mdTODO: think more about robustness here
+
+					modDeprecation = collectModuleDeprecationWarnings(moduleVersion, req.Name, record.Version)
 					return mod, record.Version, diags, modDeprecation
 				}
 			}
@@ -646,7 +648,7 @@ func (i *ModuleInstaller) installRegistryModule(ctx context.Context, req *config
 		return nil, nil, diags, nil
 	}
 
-	modDeprecation := collectModuleDeprecationWarnings(moduleVersionsMap[latestMatch.Original()], req.CallRange.Ptr(), req.Name)
+	modDeprecation := collectModuleDeprecationWarnings(moduleVersionsMap[latestMatch.Original()], req.Name, latestMatch)
 
 	// Report up to the caller that we're about to start downloading.
 	hooks.Download(key, packageAddr.String(), latestMatch)
@@ -999,15 +1001,14 @@ func maybeImproveLocalInstallError(req *configs.ModuleRequest, diags hcl.Diagnos
 	return diags
 }
 
-func collectModuleDeprecationWarnings(moduleVersion *response.ModuleVersion, subject *hcl.Range, sourceName string) *configs.ModuleDeprecationInfo {
+func collectModuleDeprecationWarnings(moduleVersion *response.ModuleVersion, sourceName string, version *version.Version) *configs.ModuleDeprecationInfo {
 	var registryModDeprecation *configs.RegistryModuleDeprecation
 
 	// mdTODO: don't like this nil check, maybe handle a nil moduleVersion before this function call instead?
 	if moduleVersion != nil && moduleVersion.Deprecation.Deprecated {
 		registryModDeprecation = &configs.RegistryModuleDeprecation{
-			Subject:      subject,
 			ExternalLink: moduleVersion.Deprecation.ExternalLink,
-			Message:      moduleVersion.Deprecation.Message,
+			Version:      version.Original(),
 		}
 	}
 	return &configs.ModuleDeprecationInfo{
