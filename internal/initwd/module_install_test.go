@@ -6,7 +6,6 @@ package initwd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -47,7 +46,7 @@ func TestModuleInstaller(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 	assertNoDiagnostics(t, diags)
 
 	wantCalls := []testInstallHookCall{
@@ -111,7 +110,7 @@ func TestModuleInstaller_error(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -132,7 +131,7 @@ func TestModuleInstaller_emptyModuleName(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -153,7 +152,7 @@ func TestModuleInstaller_invalidModuleName(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	_, diags, _ := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -191,7 +190,7 @@ func TestModuleInstaller_packageEscapeError(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -229,7 +228,7 @@ func TestModuleInstaller_explicitPackageBoundary(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if diags.HasErrors() {
 		t.Fatalf("unexpected errors\n%s", diags.Err().Error())
@@ -252,7 +251,7 @@ func TestModuleInstaller_ExactMatchPrerelease(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	cfg, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	cfg, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if diags.HasErrors() {
 		t.Fatalf("found unexpected errors: %s", diags.Err())
@@ -279,7 +278,7 @@ func TestModuleInstaller_PartialMatchPrerelease(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	cfg, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	cfg, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if diags.HasErrors() {
 		t.Fatalf("found unexpected errors: %s", diags.Err())
@@ -302,7 +301,7 @@ func TestModuleInstaller_invalid_version_constraint_error(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -328,7 +327,7 @@ func TestModuleInstaller_invalidVersionConstraintGetter(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -354,7 +353,7 @@ func TestModuleInstaller_invalidVersionConstraintLocal(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 
 	if !diags.HasErrors() {
 		t.Fatal("expected error")
@@ -380,7 +379,7 @@ func TestModuleInstaller_symlink(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 	assertNoDiagnostics(t, diags)
 
 	wantCalls := []testInstallHookCall{
@@ -432,31 +431,6 @@ func TestModuleInstaller_symlink(t *testing.T) {
 	assertResultDeepEqual(t, gotTraces, wantTraces)
 }
 
-func TestInstallModulesFromRegistryWithDeprecations(t *testing.T) {
-	fixtureDir := filepath.Clean("testdata/temp-registry-modules-deprecations")
-	tmpDir, done := tempChdir(t, fixtureDir)
-	// the module installer runs filepath.EvalSymlinks() on the destination
-	// directory before copying files, and the resultant directory is what is
-	// returned by the install hooks. Without this, tests could fail on machines
-	// where the default temp dir was a symlink.
-	dir, err := filepath.EvalSymlinks(tmpDir)
-	if err != nil {
-		t.Error(err)
-	}
-
-	defer done()
-
-	hooks := &testInstallHooks{}
-	modulesDir := filepath.Join(dir, ".terraform/modules")
-
-	loader, close := configload.NewLoaderForTests(t)
-	defer close()
-	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	_, _, deprecations := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
-	jsonBytes, _ := json.MarshalIndent(deprecations, "", "  ")
-	t.Logf("Diags in test: %s", jsonBytes)
-}
-
 func TestLoaderInstallModules_registry(t *testing.T) {
 	if os.Getenv("TF_ACC") == "" {
 		t.Skip("this test accesses registry.terraform.io and github.com; set TF_ACC=1 to run it")
@@ -481,7 +455,7 @@ func TestLoaderInstallModules_registry(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	_, diags, _ := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
 	assertNoDiagnostics(t, diags)
 
 	v := version.Must(version.NewVersion("0.0.1"))
@@ -644,7 +618,7 @@ func TestLoaderInstallModules_goGetter(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	_, diags, _ := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
 	assertNoDiagnostics(t, diags)
 
 	wantCalls := []testInstallHookCall{
@@ -762,7 +736,7 @@ func TestModuleInstaller_fromTests(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, nil)
-	_, diags, _ := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), ".", "tests", false, false, hooks)
 	assertNoDiagnostics(t, diags)
 
 	wantCalls := []testInstallHookCall{
@@ -819,7 +793,7 @@ func TestLoadInstallModules_registryFromTest(t *testing.T) {
 	loader, close := configload.NewLoaderForTests(t)
 	defer close()
 	inst := NewModuleInstaller(modulesDir, loader, registry.NewClient(nil, nil))
-	_, diags, _ := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
+	_, diags := inst.InstallModules(context.Background(), dir, "tests", false, false, hooks)
 	assertNoDiagnostics(t, diags)
 
 	v := version.Must(version.NewVersion("0.0.1"))
